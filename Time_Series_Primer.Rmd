@@ -1,0 +1,98 @@
+---
+title: "A Primer for Time Series Analysis & Forecasting"
+author: Alan Budd
+date: March 7, 2019
+output: 
+  revealjs::revealjs_presentation:
+    theme: night
+    transition: slide
+    # incremental: true
+---
+
+# A gentle introduction to time series
+
+## What is time series?
+
+- Time series analysis allows you to analyze data that has an underlying dependence that's not explicityly modeled: a dependence on **time**.
+- Using proper time series techniques, you can discover predictive patterns for forecasting into the future.
+
+## Why time series? Why not regression?
+
+What are some of the underlying assumptions we make when performing (generalized) linear regression? Would these assumptions hold true if we introduced an underlying dependence on time?
+
+> - Distributional assumption on the response variable
+> - Linear relationship between predictors & (linked) response variable
+> - <span style="color:red"> The response variable is independent distributed </span>
+> - <span style="color:red"> Errors need to be independent </span>
+
+## Autocorrelation
+
+**Challenge:** Given the mathematical definitions of correlation & autocorrelation, can you describe what autocorrelation is?
+
+<span style="color:green">
+Correlation: How two data series $X$ and $Y$ relate to each other (linerally)
+
+\[
+\rho_{X,Y}=\frac{E\big[(X-\mu_X)(Y-\mu_Y)\big]}{\sigma_X\sigma_Y}
+\]
+</span>
+
+<span style="color:orange">
+Autocorrelation: ???
+
+\[
+\rho_{X_{t},X_{t+h}}=\frac{E\Big[\big(X_{t}-\mu_{X_{t}}\big)\big(X_{t+h}-\mu_{X_{t+h}}\big)\Big]}{\sigma_{X_{t}}\sigma_{X_{t+h}}}
+\]
+</span>
+
+> - Answer: Autocorrelation is how a data series $X$ relates to *itself* in two different time periods, $t$ and $t+h$.
+
+## Partial Autocorrelation
+
+
+## Stationarity
+Probably the most important concept in time series analysis is **stationarity**. A time series is said to be *strictly stationary* if the underlying probably distribution of the time series doesn't change across any time lag.
+
+</br>
+<span style="color:green">**Question** </span>: Why is this important? 
+</br>
+
+> - A stationary series, even when exposed to shocks, will return to some (known) mean & deviation, allowing for reliable forecasts. A non-stationary series will respond unpredictably to shocks, which makes forecasting more difficult.
+
+## Weak stationarity
+
+More times than not, strict stationarity is too restrictive of a requirement for sound time series analysis. An alternative is *weak stationarity*, which requires that
+
+1. The mean of the time series is constant over time
+2. The autocorrelation of the time series only depends on time lag
+
+Weak stationarity allows for a much more relaxed restriction for good time series analysis, but still gives the analyst confidence that the time series will tend towards a known center and not deviate significantly, even when shocks occur.
+
+# Time Series in R
+
+## Time Series Data
+
+In order to perform time series analysis/forecasting, you need to have time series data. Time series data will always have 2 variables
+
+> 1. Time
+>    + The time variable can be represented at any granularity (seconds, months, years, etc.)
+>    + In general, we need the time to be sequential, with no gaps in the data (more on that later)
+> 2. A numerical value associated to that time
+
+## Time Series Data - the `ts` object
+
+Most of the time in R, you'll be working with data as a `data.frame` object, which is what you think of when you think of your standard data table. This is the case with the `births` data we'll be working with.
+
+The most common way to work with time series data in R is by creating a `ts` object, which provides a standard input for time series functions in R (imputation, plotting, model fitting, forecasting, etc.)
+
+
+# An Example: Births in the U.S.
+
+## The Data
+
+The data used for our example represents a daily count of births in the USA from 2000 to 2014, as recorded by the Social Security Administration. Formatted data provided by [FiveThirtyEight](FiveThirtyEight.com).
+```{r, echo=TRUE}
+library(readr)
+births <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/births/US_births_2000-2014_SSA.csv")
+knitr::kable(head(births), caption = "Births data, per the Social Security Administration")
+```
