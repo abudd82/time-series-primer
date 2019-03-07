@@ -3,88 +3,248 @@ title: "A Primer for Time Series Analysis & Forecasting"
 author: Alan Budd
 date: March 7, 2019
 output: 
-  revealjs::revealjs_presentation:
-    theme: night
-    transition: slide
-    # incremental: true
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 
-# A gentle introduction to time series
+# Introduction
 
 ## What is time series?
 
-- Time series analysis allows you to analyze data that has an underlying dependence that's not explicityly modeled: a dependence on **time**.
-- Using proper time series techniques, you can discover predictive patterns for forecasting into the future.
+Time series analysis allows you to analyze data that has an underlying dependence that's not explicityly modeled: a dependence on **time**. Using proper time series techniques, you can discover predictive patterns for forecasting into the future.
 
-## Why time series? Why not regression?
+## Time series vs. regression
 
-What are some of the underlying assumptions we make when performing (generalized) linear regression? Would these assumptions hold true if we introduced an underlying dependence on time?
+The most common way to train a model on data with a numeric target variable is **regression**. However, with any regression problem, there are underlying assumptions that should be met.
 
-> - Distributional assumption on the response variable
-> - Linear relationship between predictors & (linked) response variable
-> - <span style="color:red"> The response variable is independent distributed </span>
-> - <span style="color:red"> Errors need to be independent </span>
+**Question:** What are some of the underlying assumptions we make when performing (generalized) linear regression? Would these assumptions hold true if we introduced an underlying dependence on time?
+
+**Answer:**
+
+- Distributional assumption on the response variable
+- Linear relationship between predictors & (linked) response variable
+- <span style="color:red"> The response variable is independent distributed </span>
+- <span style="color:red"> Errors need to be independent </span>
+
+# Important concepts
 
 ## Autocorrelation
 
-**Challenge:** Given the mathematical definitions of correlation & autocorrelation, can you describe what autocorrelation is?
+**Question:** Given the mathematical definitions of correlation & autocorrelation, can you describe what autocorrelation is?
 
-<span style="color:green">
 Correlation: How two data series $X$ and $Y$ relate to each other (linerally)
 
 \[
 \rho_{X,Y}=\frac{E\big[(X-\mu_X)(Y-\mu_Y)\big]}{\sigma_X\sigma_Y}
 \]
-</span>
 
-<span style="color:orange">
 Autocorrelation: ???
 
 \[
 \rho_{X_{t},X_{t+h}}=\frac{E\Big[\big(X_{t}-\mu_{X_{t}}\big)\big(X_{t+h}-\mu_{X_{t+h}}\big)\Big]}{\sigma_{X_{t}}\sigma_{X_{t+h}}}
 \]
-</span>
 
-> - Answer: Autocorrelation is how a data series $X$ relates to *itself* in two different time periods, $t$ and $t+h$.
+
+**Answer:** Autocorrelation is how a data series $X$ relates to *itself* in two different time periods, $t$ and $t+h$.
 
 ## Partial Autocorrelation
+Autocorrelation is a great measure for measuring dependence on time, but it's not a great measure for measuring dependence between two specific time periods (defined by a lag). This is because autocorrelation captures dependency in lags *cummulatively*.
 
+As an example, if you want to measure a dependence between between $X_t$ and $X_{t-3}$, using the autocorrelation will include dependence between every lag in-between, i.e.
+1. $X_t$ and $X_{t-1}$
+2. $X_{t-1}$ and $X_{t-2}$
+3. $X_{t-2}$ and $X_{t-3}$
+
+To address this cummulative dependence, the **partial autocorrelation** is the autocorrelation between two time periods, with the autocorrelation of every lag in between removed. We will use partial autocorrelation later in this guide when we want to see how far back in time in we need our model to get data for predictions.
 
 ## Stationarity
-Probably the most important concept in time series analysis is **stationarity**. A time series is said to be *strictly stationary* if the underlying probably distribution of the time series doesn't change across any time lag.
+One of the most important concepts in time series analysis is **stationarity**. A time series is said to be *strictly stationary* if the underlying probably distribution of the time series doesn't change across any time lag.
 
 </br>
-<span style="color:green">**Question** </span>: Why is this important? 
+**Question:** Why is this important? 
 </br>
 
-> - A stationary series, even when exposed to shocks, will return to some (known) mean & deviation, allowing for reliable forecasts. A non-stationary series will respond unpredictably to shocks, which makes forecasting more difficult.
+**Answer:** A stationary series, even when exposed to shocks, will return to some (known) mean & deviation, allowing for reliable forecasts. A non-stationary series will respond unpredictably to shocks, which makes forecasting more difficult.
 
 ## Weak stationarity
 
 More times than not, strict stationarity is too restrictive of a requirement for sound time series analysis. An alternative is *weak stationarity*, which requires that
 
 1. The mean of the time series is constant over time
-2. The autocorrelation of the time series only depends on time lag
+2. The autocorrelation of the time series only depends on lag
 
 Weak stationarity allows for a much more relaxed restriction for good time series analysis, but still gives the analyst confidence that the time series will tend towards a known center and not deviate significantly, even when shocks occur.
 
+# Time series models
+
+## White noise
+The simplest version of time series is *white noise*, which is time series data that has the following properties:
+- independently & identically distributed
+- a mean of 0
+- a finite variance, $\sigma^2$
+- the series in uncorrelated over time, i.e. the autocorrelation between $X_t$ and $X_{t-h}$ for any lag $h$ is 0.
+
+If this sounds familiar, it's essentially the "time series equivalent" of a zero-mean normal distribution. A white noise process is important in the exact same way that a zero-mean normal distribution is important in regression: most time series models have an assumed white-noise term to represent model *error*.
+
+## Autoregressive (AR) model
+
+### Overview
+An **autoregressive** time series model of order p, denoted $AR(p)$, is mathematically defined as 
+\[
+X_t=c+\sum_{i=1}^{p} \phi_i X_{t-i} + \varepsilon_t
+\]
+where
+- $c$ represents a constant (think of the *intercept* in regression)
+- $\varepsilon_t$ represents a white noise process (think of the *residual* in regression)
+
+**Question:** Looking at the above formula, can you describe how an autoregressive model forecasts into the future?
+
+**Answer:** A future value of the time series is forecasted as a linear combination of previous values of the time series.
+
+### Stationarity
+An $AR(p)$ process is weakly stationary if all of the roots of the *characteristic polynomial* formed from the coefficients of the autoregressive model are less than 1, in absolute value.
+
+## Moving Average (MA)
+
+### Overview
+
+A **moving average** time series model of order q, denoted $MA(q)$, is mathematically defined as 
+\[
+X_t=\mu+\varepsilon_t+\sum_{i=1}^{q} \theta_i \varepsilon_{t-i}
+\]
+where
+- $mu$ represents the average of the time series (this is often times assumed to be 0, and any time series can be transformed to meet this assumption)
+- $\varepsilon_t$, $\varepsilon_{t-1}$,...,$\varepsilon_{t_q}$ represent white noise processes
+
+**Question:** Looking at the above formula, can you describe how an moving average model forecasts into the future?
+
+**Answer:** A future value of the time series is forecasted as a linear combination of current & previous stochastic terms (these stochastic terms are unobserved).
+
+### Stationarity
+Unlike an autoregressive process, a moving average process is always stationary.
+
+## Autoregressive Moving Average (ARMA)
+Combining the two previous models creates an **autoregressive moving average** model, denoted $ARMA(p,q)$. Mathemtically, this is defined as
+
+\[
+X_t= c + \varepsilon_t + \sum_{i=1}^{p} \phi_i X_{t-i}  + \sum_{i=1}^{q} \theta_i \varepsilon_{t-i}
+\]
+
+This leads to a time series model where current values of the time series depend on
+- previous values in the time series
+- current & previous unobservable white noise processes
+
+## ARMA extensions
+
+### Differencing (integration)
+
+As mentioned before, an important part of time series modeling is getting the series to be stationary. The most common example of a non-stationary time series is one with a *trend*. The most common way to address trend is through differencing (or integration), which is simply subtracting consecutive values of your time series, i.e.
+
+\[
+Y_t = X_t-X_{t-1}
+\]
+
+This differencing can be performed repeatedly until a trend is fully removed.
+
+### Autoregressive Integrated Moving-Average (ARIMA)
+
+The differencing can be included in the ARMA model to specify an **Autoregressive Integrated Moving-Average**, denoted $ARIMA(p,d,q)$, where $d$ denotes the number of integrations performed prior to fitting the ARMA model.
+
+### Seasonality
+
+Another common form of a non-stationary time series is *seasonality*, which is a pattern of recurring dependence based on a *period*, or a frequency of the pattern. An example might be ice cream sales, which have recurring increasing patterns in the summer, or sales of Christmas trees, which generally peak in December.
+
+Seasonal effects in a time series can be captued through a further extension of an ARIMA model, called a **Seasonal Autoregressive Integrated Moving-Average** model, denoted $ARIMA(p,d,q)(P,D,Q)_m$, where $P$, $D$, and $Q$ denote the seasonal components of the autoregressive, integrated, and moving average model, respectively. The $m$ denotes the periodicity of the seasonal pattern (e.g. for monthly data, $m=12$ would denote a yearly seasonal pattern, $m=4$ would denote a quarterly pattern, etc.)
+
 # Time Series in R
 
-## Time Series Data
+## Workflow
+
+In general, most time series done in R will follow a workflow like
+
+1. Import a dataset that have the necessary components
+2. Convert that dataset into a `ts` object
+3. Visualize the time series
+4. Fit a time series model to the time series (including validation)
+5. Use the model to generate forecasts
+
+### Time Series Data
 
 In order to perform time series analysis/forecasting, you need to have time series data. Time series data will always have 2 variables
 
-> 1. Time
->    + The time variable can be represented at any granularity (seconds, months, years, etc.)
->    + In general, we need the time to be sequential, with no gaps in the data (more on that later)
-> 2. A numerical value associated to that time
+1. Time
+    + The time variable can be represented at any granularity (seconds, months, years, etc.)
+    + In general, we need the time to be sequential, with no gaps in the data (more on that later)
+2. A numerical value associated to that time
 
-## Time Series Data - the `ts` object
+### The `ts` object
 
 Most of the time in R, you'll be working with data as a `data.frame` object, which is what you think of when you think of your standard data table. This is the case with the `births` data we'll be working with.
 
 The most common way to work with time series data in R is by creating a `ts` object, which provides a standard input for time series functions in R (imputation, plotting, model fitting, forecasting, etc.)
 
+In general, a `ts` object can be created using the `ts(data, start, end, frequency)` function, which takes the following parameters:
+
++ `data` - a vector representing the numeric time series values
++ `start` - the starting date of the time series
++ `end` - the ending date of the time series
++ `frequency` - the number of observations per unit of time
+  + Example: `12` would represent monthly data, `7` would represent daily data
+  
+### Visualizing the time series
+
+Once the `ts` object is created, you can simply use `plot()` to directly plot the time series as a line chart, which will help visualize any trends or patterns in the time series.
+
+An alternative for visualizing the time series as a line plot would be to use `ggplot` with the initial data frame *before* creating the `ts` object.
+
+Along with visualizing the time series as a plot, it's important to visualize both the autocorrelation & partial autocorrelation of the time series. This is important because
++ The autocorrelation can give the user an idea of what order MA model might be necessary
++ The partial autocorrelation can give the user an idea of what order AR model might be necessary
+
+In R, you can visualize the autocorrelation & partial autocorrelation using the `Acf()` and `Pacf()` functions in the `forecast` package, a very important package in R for time series analysis.
+
+More details on the `forecast` package can be found [here](https://cran.r-project.org/web/packages/forecast/forecast.pdf).
+
+### Fitting a model
+
+Once the user feels comfortable with the time series, a ARIMA model can be fit to the data using either the `Arima()` or `auto.arima()` functions, both in the `forecast` package.
+
+`Arima(y, order = c(0, 0, 0), seasonal = c(0, 0, 0))`
+
+The `Arima()` functions fits an ARIMA model with a user-supplied specification for each of the ARIMA parameters.
+
+- `y` - a `ts` object
+- `order` - the specification of the non-seasonal ARIMA model, i.e. $(p,d,q)$
+- `seasonal` - the specification of the seasonal ARIMA model, i.e. $(P,D,Q)$
+  + Note: the frequency of the seasonal ARIMA model defaults to the frequency of the time series object
+  
+More details on the `Arima()` function can be found [here](https://www.rdocumentation.org/packages/forecast/versions/8.5/topics/Arima)
+  
+`auto.arima(y, ...)`
+
+The `auto.arima()` function does a grid search across multiple specifications of the ARIMA model and returns the model with the optimal *information criteria* (AIC, BIC, or AICc).
+
+-`y` - a `ts` object
+- `...` - further constraints on the maximum values of certain parameters can be specified in the model
+
+More details on the `auto.arima()` function can be found [here](https://www.rdocumentation.org/packages/forecast/versions/8.5/topics/auto.arima)
+
+### Forecasting
+
+Once the ARIMA model is fit, it can be used to generate forecasts into the future. The forecasts for the time series begin where the trained time series object ends. For instance, if the model is trained on a monthly time series until Jan 2018, the next forecast will be Feb 2018.
+
+Forecasting in R is simple using the `forecast()` function in the `forecast` package.
+
+`forecast(object, h, level, ...)`
++ `object` - a time series model object that will be used for generating forecasts
++ `h` - the number of lags ahead you want to generate forecasts for
++ `level` - the confidence level for the prediction intervals (defaults to 80 & 95)
++ `...` - extra optional parameters
+
+More details on the `forecast()` function can be found [here](https://www.rdocumentation.org/packages/forecast/versions/8.5/topics/forecast)
 
 # An Example: Births in the U.S.
 
@@ -93,6 +253,81 @@ The most common way to work with time series data in R is by creating a `ts` obj
 The data used for our example represents a daily count of births in the USA from 2000 to 2014, as recorded by the Social Security Administration. Formatted data provided by [FiveThirtyEight](FiveThirtyEight.com).
 ```{r, echo=TRUE}
 library(readr)
+
 births <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/births/US_births_2000-2014_SSA.csv")
+
 knitr::kable(head(births), caption = "Births data, per the Social Security Administration")
 ```
+
+For the sake of this analysis, we'll work with monthly data. Since the data is recorded daily, we simply need to group by the `year` and `month` columns and sum the `births` column. The `dplyr` package provides excellent functionality for doing these SQL-type operations on a data frame.
+
+```{r, echo=TRUE, message=FALSE}
+library(dplyr)
+
+births_monthly <- births %>%
+  group_by(year, month) %>%
+  summarise(total_births = sum(births))
+
+knitr::kable(head(births_monthly), caption = "Births data aggregated monthly")
+```
+
+## Creating the `ts()` object.
+
+Now that we have the data we need, we can create the `ts` object we need using the `ts()` function.
+
+```{r, echo=TRUE}
+births_ts <- ts(births_monthly$total_births, start = c(2000, 1), end = c(2014, 12), frequency = 12)
+
+births_ts
+```
+
+## Visualizing births time series
+
+Now that we have the `ts` object we need for visualization & model fitting, let's start with visualization. The easiest place to start is creating a line plot of the time series.
+
+```{r, echo=TRUE}
+plot(births_ts, main = "Births in Boston, 2000-2014", xlab = "Date", ylab = "Number of births")
+```
+
+We can see directly from the plot that there is some non-stationary patterns. Namely, we can see that there is a season pattern of peaks that correspond to summer months and valleys during the winter. Also, we can see a decreasing trend in births from 2007-onwards. Therefore, we can expect the final version of the ARIMA model to likely have some differencing and seasonal effect accounted for.
+
+Next, it's worth looking at the autocorrelation & partial autocorrelation of the time series.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(forecast)
+
+Acf(births_ts, lag.max = 60, main = "Autocorrelation")
+Pacf(births_ts, lag.max = 60, main = "Partial Autocorrelation")
+```
+
+From the autocorrelation, we see some strong seasonal correlation, as well as non-seasonal correlation up to lag 3. So we can probably expect a non-zero order for both the seasonal & non-seasonal MA models ($q$ and $Q$).
+
+From the partial autocorrelation, we see similar strong seasonal partial autocorrelation, as well as strong non-seasonal partial autocorrelation. This would suggest that the final version of the model will have a non-zero order for both the seasonal & non-seasonal AR models ($p$ and $P$).
+
+## Fitting a model
+
+Now that we've visualized the time series a bit, we can move forward with fititng an ARIMA model. For sake of time, we use the `auto.arima()` function to perform a grid search across several possible models and have R pick the one it thinks is best.
+
+```{r, echo=TRUE}
+model <- auto.arima(births_ts)
+
+summary(model)
+```
+
+From the summary, we can see that we have all non-zero parameters, which shows the existence of a lot of patterns. This is reinforced by the plots we saw earlier, which displayed patterns of seasonality, trend, and lagged dependence.
+
+## Forecasting
+
+Now that we have a model, we can use it to create forecasts. Again, this is extremely simple using the `forecast()` function.
+
+```{r, echo=TRUE}
+f <- forecast(model, h = 36)
+
+plot(f, main = "Forecasts for 2015-2018 births in Boston", xlab = "Date", ylab = "Number of births")
+```
+
+Looking at the forecasts, we see that there are generally decreasing over time, which is reflective of the decreasing pattern in the data from about 2007 onwards. You can also see that th model is leveraging seasonal patterns, which season peaks around summer and seasonal valleys around winter, which is observed in the data.
+
+# Conclusion
+
+Hopefully this guide is a sufficient primer on some important time series concepts, as well as the general workflow of performing time series analysis & forecasting in R. There are a plethora of time series models outside of ARIMA models, but the workflow of time series analysis will be similar regardless of model. If you have any specific questions, please [contact me](mailto:Alan.Budd@LibertyMutual.com).
